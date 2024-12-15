@@ -27,6 +27,7 @@ async function run() {
         await client.connect();
 
         const jobsCollection = client.db('jobPortal').collection('jobs');
+        const jobApplicationCollection = client.db('jobPortal').collection('job_applications')
 
         app.get('/jobs', async (req, res) => {
             const cursor = jobsCollection.find();
@@ -41,13 +42,39 @@ async function run() {
                 }
                 const query = { _id: new ObjectId(id) };
                 const result = await jobsCollection.findOne(query);
-                if(!result){
-                    return res.status(404).send({message: "Job not found"})
+                if (!result) {
+                    return res.status(404).send({ message: "Job not found" })
                 }
                 res.send(result)
             } catch (error) {
                 console.log("Error fetching job details", error);
-                res.status(500).send({message:"An error happen while job details fetching"})
+                res.status(500).send({ message: "An error happen while job details fetching" })
+            }
+        })
+
+        // application related apis 
+        app.get('/user/job-application', async (req, res) => {
+            const email = req.query.email;
+            const query = {applicant_email: email};
+            const result = await jobApplicationCollection.find(query).toArray();
+            res.send(result)
+        })
+        app.post('/job-applications', async (req, res) => {
+            try {
+                const applications = req.body;
+                const result = await jobApplicationCollection.insertOne(applications);
+
+                if (!result.acknowledged) {
+                    return res.status(500).send({ message: "Failed to submit job application" });
+                }
+
+                res.status(201).send({
+                    message: "Job application submitted successfully",
+                    result
+                })
+            } catch (error) {
+                console.error("Error submitting job application", error);
+                res.status(500).send({ message: "An error occurred while submitting the job application" });
             }
         })
 
