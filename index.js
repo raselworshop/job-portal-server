@@ -55,8 +55,19 @@ async function run() {
         // application related apis 
         app.get('/user/job-application', async (req, res) => {
             const email = req.query.email;
-            const query = {applicant_email: email};
+            const query = { applicant_email: email };
             const result = await jobApplicationCollection.find(query).toArray();
+            for (const appliaction of result) {
+                console.log(appliaction.job_id)
+                const query1 = { _id: new ObjectId(appliaction.job_id) };
+                const job = await jobsCollection.findOne(query1);
+                if (job) {
+                    appliaction.title = job.title;
+                    appliaction.location = job.location;
+                    appliaction.company = job.company;
+                    appliaction.company_logo = job.company_logo
+                }
+            }
             res.send(result)
         })
         app.post('/job-applications', async (req, res) => {
