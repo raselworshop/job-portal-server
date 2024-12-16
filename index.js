@@ -51,6 +51,12 @@ async function run() {
                 res.status(500).send({ message: "An error happen while job details fetching" })
             }
         })
+        // job adding 
+        app.post('/apis/jobs', async (req, res) => {
+            const newJob = req.body;
+            const result = await jobsCollection.insertOne(newJob);
+            res.send(result)
+        })
 
         // application related apis 
         app.get('/user/job-application', async (req, res) => {
