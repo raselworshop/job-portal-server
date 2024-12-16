@@ -30,7 +30,12 @@ async function run() {
         const jobApplicationCollection = client.db('jobPortal').collection('job_applications')
 
         app.get('/jobs', async (req, res) => {
-            const cursor = jobsCollection.find();
+            const email = req.query.email;
+            let query = {};
+            if (email) {
+                query = { hr_email: email }
+            }
+            const cursor = jobsCollection.find(query);
             const result = await cursor.toArray();
             res.send(result)
         })
@@ -84,6 +89,31 @@ async function run() {
                 if (!result.acknowledged) {
                     return res.status(500).send({ message: "Failed to submit job application" });
                 }
+
+                const jobId = applications.job_id;
+                const jobQuery = { _id: new ObjectId(jobId) };
+                const job = await jobsCollection.findOne(jobQuery);
+                
+                if (!job) {
+                    return res.status(404).send({ message: "Job not found" });
+                }
+                
+                let jobCount = 0;
+                if (job.appliactionCount) {
+                    jobCount = job.appliactionCount + 1;
+                } else {
+                    jobCount = 1;
+                }
+                // update the job info 
+                const filter = { _id: new ObjectId(jobId) }
+                const updatedDoc = {
+                    $set: {
+                        appliactionCount: jobCount
+                    }
+                }
+                const updatedResult = await jobsCollection.updateOne(filter, updatedDoc)
+                console.log("Updated Job:", updatedResult);
+                console.log(job)
 
                 res.status(201).send({
                     message: "Job application submitted successfully",
