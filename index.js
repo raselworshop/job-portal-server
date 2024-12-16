@@ -63,6 +63,13 @@ async function run() {
             res.send(result)
         })
 
+        app.get('/recruiter/view-applications/:job_Id', async (req, res) => {
+            const jobId = req.params.job_Id;
+            const query = {job_id:jobId};
+            const result = await jobApplicationCollection.find(query).toArray();
+            res.send(result)
+        })
+
         // application related apis 
         app.get('/user/job-application', async (req, res) => {
             const email = req.query.email;
@@ -123,6 +130,19 @@ async function run() {
                 console.error("Error submitting job application", error);
                 res.status(500).send({ message: "An error occurred while submitting the job application" });
             }
+        })
+
+        app.patch('/recruiter/view-applications/set-status/:id', async (req, res) => {
+            const id = req.params.id;
+            const data= req.body;
+            const filter = {_id: new ObjectId(id)};
+            const updateDoc = {
+                $set:{
+                    status: data.status
+                }
+            }
+            const result = await jobApplicationCollection.updateOne(filter, updateDoc);
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
