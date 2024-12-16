@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
+const cookieParser= require('cookie-parser')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
@@ -8,6 +10,7 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5hy3n.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -29,6 +32,17 @@ async function run() {
         const jobsCollection = client.db('jobPortal').collection('jobs');
         const jobApplicationCollection = client.db('jobPortal').collection('job_applications')
 
+        // auth related APIs 
+        app.post('/user/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '1h' })
+            res
+            .cookie('token', token, {
+                httpOnly:true,
+                secure: false,
+            })
+            .send({success: true})
+        })
         app.get('/jobs', async (req, res) => {
             const email = req.query.email;
             let query = {};
@@ -65,7 +79,7 @@ async function run() {
 
         app.get('/recruiter/view-applications/:job_Id', async (req, res) => {
             const jobId = req.params.job_Id;
-            const query = {job_id:jobId};
+            const query = { job_id: jobId };
             const result = await jobApplicationCollection.find(query).toArray();
             res.send(result)
         })
@@ -100,11 +114,11 @@ async function run() {
                 const jobId = applications.job_id;
                 const jobQuery = { _id: new ObjectId(jobId) };
                 const job = await jobsCollection.findOne(jobQuery);
-                
+
                 if (!job) {
                     return res.status(404).send({ message: "Job not found" });
                 }
-                
+
                 let jobCount = 0;
                 if (job.appliactionCount) {
                     jobCount = job.appliactionCount + 1;
@@ -134,10 +148,10 @@ async function run() {
 
         app.patch('/recruiter/view-applications/set-status/:id', async (req, res) => {
             const id = req.params.id;
-            const data= req.body;
-            const filter = {_id: new ObjectId(id)};
+            const data = req.body;
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
-                $set:{
+                $set: {
                     status: data.status
                 }
             }
