@@ -20,11 +20,11 @@ app.use(express.json());
 app.use(cookieParser());
 
 const logger = async (req, res, next) => {
-    console.log('inside the logger')
+    // console.log('inside the logger')
     next();
 }
 const verifyToken = async (req, res, next) => {
-    console.log('inside the verify token middleware', req.cookies)
+    // console.log('inside the verify token middleware', req.cookies)
     const token = req?.cookies?.token;
     if (!token) {
         return res.status(401).send({ message: 'Unauthorized access' })
@@ -80,13 +80,33 @@ async function run() {
                 .send({ success: true })
         })
         app.get('/jobs', logger, async (req, res) => {
-            console.log('inside the api callback now')
+            // console.log('inside the api callback now')
             const email = req.query.email;
+            const sort = req.query?.sort;
+            const search = req.query?.search;
+            const min = req.query?.min;
+            const max = req.query?.max;
+
+            let sortQuery = {};
             let query = {};
             if (email) {
                 query = { hr_email: email }
             }
-            const cursor = jobsCollection.find(query);
+            if(sort=="true"){
+                sortQuery = {'salaryRange.min' : -1}
+            }
+            if(search){
+                query.location = {$regex: search, $options: "i"}
+            }
+            if(min && max){
+                query = {
+                    ...query,
+                    "salaryRange.min":{$gte: min},
+                    "salaryRange.max":{$lte: max}
+                }
+            }
+            // console.log(query)
+            const cursor = jobsCollection.find(query).sort(sortQuery);
             const result = await cursor.toArray();
             res.send(result)
         })
@@ -103,7 +123,7 @@ async function run() {
                 }
                 res.send(result)
             } catch (error) {
-                console.log("Error fetching job details", error);
+                // console.log("Error fetching job details", error);
                 res.status(500).send({ message: "An error happen while job details fetching" })
             }
         })
@@ -130,12 +150,12 @@ async function run() {
                 return res.status(403).send({ message: "Forbidden access" })
             }
 
-            console.log("creadentials cookies", req.cookies)
+            // console.log("creadentials cookies", req.cookies)
 
             const result = await jobApplicationCollection.find(query).toArray();
             //  not best way
             for (const appliaction of result) {
-                console.log(appliaction.job_id)
+                // console.log(appliaction.job_id)
                 const query1 = { _id: new ObjectId(appliaction.job_id) };
                 const job = await jobsCollection.findOne(query1);
                 if (job) {
@@ -178,15 +198,15 @@ async function run() {
                     }
                 }
                 const updatedResult = await jobsCollection.updateOne(filter, updatedDoc)
-                console.log("Updated Job:", updatedResult);
-                console.log(job)
+                // console.log("Updated Job:", updatedResult);
+                // console.log(job)
 
                 res.status(201).send({
                     message: "Job application submitted successfully",
                     result
                 })
             } catch (error) {
-                console.error("Error submitting job application", error);
+                // console.error("Error submitting job application", error);
                 res.status(500).send({ message: "An error occurred while submitting the job application" });
             }
         })

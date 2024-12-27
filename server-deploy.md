@@ -63,7 +63,7 @@ const cookieOptions = {
 //creating Token
 app.post("/jwt", logger, async (req, res) => {
   const user = req.body;
-  console.log("user for token", user);
+  // console.log("user for token", user);
   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
 
   res.cookie("token", token, cookieOptions).send({ success: true });
@@ -72,7 +72,7 @@ app.post("/jwt", logger, async (req, res) => {
 //clearing Token
 app.post("/logout", async (req, res) => {
   const user = req.body;
-  console.log("logging out", user);
+  // console.log("logging out", user);
   res
     .clearCookie("token", { ...cookieOptions, maxAge: 0 })
     .send({ success: true });
