@@ -1,0 +1,1 @@
+https://job-portal-63338.web.app/all-jobs
